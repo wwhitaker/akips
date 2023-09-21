@@ -1,4 +1,3 @@
-import os
 import re
 import logging
 import requests
@@ -7,14 +6,18 @@ import requests
 logger = logging.getLogger(__name__)
 
 class AKIPS:
-    # Class to handle interactions with the NIT database
+    # Class to handle interactions with AKiPS API
 
-    def __init__(self, server, username='api-ro', password=None):
+    def __init__(self, server, username='api-ro', password=None, verify=True):
         # Connect to AKiPS instance
         self.server = server
         self.username = username
         self.password = password
+        self.verify = verify
         self.session = requests.Session()
+
+    def get_devices(self):
+        pass
 
     def get_events(self, type='all', period='last1h'):
         ''' Pull a list of events.  Command syntax:
@@ -50,13 +53,10 @@ class AKIPS:
     def get(self, section='/api-db/', params=None):
         ''' Search and Read Objects: GET Method '''
         url = 'https://' + self.server + section
-        logger.debug("WAPI GET %s" % (url))
-        #logger.debug("WAPI GET params: " + pprint.pformat(params))
         params['username'] = self.username
         params['password'] = self.password
         # GET requests have 2 args: URL, HEADERS
-        # Verify is off because the 'certifi' python module is missing the InCommon interim CA
-        r = self.session.get(url, params=params, verify=False)
+        r = self.session.get(url, params=params, verify=self.verify)
 
         # Return Status/Errors
         # 200	Normal return. Referenced object or result of search in body.
