@@ -4,14 +4,16 @@ the [AKiPS Network Monitoring Software](http://akips.com) API interface.
 
 ## Example
 
-    from akips import AKIPS
+```py
+from akips import AKIPS
 
-    api = AKIPS(akips.example.com,username='api-ro',password='something')
+api = AKIPS('akips.example.com',username='api-ro',password='something')
 
-    devices = api.get_devices()
+devices = api.get_devices()
 
-    for device in devices:
-        print("Device entry: {}".format(device))
+for device in devices:
+    print("Device entry: {}".format(device))
+```
 
 # Bugs/Requests
 
