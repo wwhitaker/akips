@@ -13,6 +13,7 @@ devices = api.get_devices()
 
 for device in devices:
     print("Device entry: {}".format(device))
+
 ```
 
 # Bugs/Requests
