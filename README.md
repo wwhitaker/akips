@@ -1,6 +1,6 @@
 # akips
 This akips module provides a simple way for python scripts to interact with 
-the [AKiPS](http://akips.com) api interface.
+the [AKiPS Network Monitoring Software](http://akips.com) API interface.
 
 ## Example
 
@@ -13,3 +13,7 @@ the [AKiPS](http://akips.com) api interface.
     for device in devices:
         print("Device entry: {}".format(device))
 
+Bugs/Requests
+-------------
+
+Please use the [GitHub issue tracker](https://github.com/wwhitaker/akips/issues) to submit bugs or request features.
