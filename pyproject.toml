@@ -9,6 +9,7 @@ repository = "https://github.com/wwhitaker/akips"
 
 [tool.poetry.dependencies]
 python = "^3.10"
+requests = ">=2.31"
 
 
 [build-system]
