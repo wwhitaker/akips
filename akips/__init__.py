@@ -31,7 +31,7 @@ class AKIPS:
         }
         text = self.akips_get(params=params)
         if text:
-            data = {} 
+            data = {}
             # Data comes back as 'plain/text' type so we have to parse it
             lines = text.split('\n')
             for line in lines:
@@ -39,15 +39,15 @@ class AKIPS:
                 if match:
                     if match.group(1) not in data:
                         # Populate a default entry for all desired fields
-                        data[ match.group(1) ] = {
+                        data[match.group(1)] = {
                             'ip4addr': '',
                             'SNMPv2-MIB.sysName': '',
                             'SNMPv2-MIB.sysDescr': '',
                             'SNMPv2-MIB.sysLocation': '',
                         }
                     # Save this attribute value to data
-                    data[ match.group(1) ][ match.group(3) ] = match.group(4)
-            logger.debug("Found {} devices in akips".format( len( data.keys() )))
+                    data[match.group(1)][match.group(3)] = match.group(4)
+            logger.debug("Found {} devices in akips".format(len(data.keys())))
             return data
         return None
 
@@ -64,7 +64,7 @@ class AKIPS:
             'function': 'web_find_device_by_ip',
             'ipaddr': ipaddr
         }
-        section='/api-script/'
+        section = '/api-script/'
 
     def get_unreachable(self):
         ''' Pull a list of unreachable IPv4 ping devices '''
@@ -105,7 +105,7 @@ class AKIPS:
             [any|all|not group {group name} ...] '''
 
         params = {
-            'cmds': 'mget event {} time {}'.format(type,period)
+            'cmds': 'mget event {} time {}'.format(type, period)
         }
         text = self.akips_get(params=params)
         if text:
@@ -124,7 +124,7 @@ class AKIPS:
                         'details': match.group('details'),
                     }
                     data.append(entry)
-            logger.debug("Found {} events of type {} in akips".format( len( data ), type))
+            logger.debug("Found {} events of type {} in akips".format(len(data), type))
             return data
         return None
 
@@ -151,7 +151,7 @@ class AKIPS:
             raise
 
         # AKiPS can return a raw error message if something fails
-        if re.match(r'^ERROR:',r.text):
+        if re.match(r'^ERROR:', r.text):
             logger.error("Web API request failed: {}".format(r.text))
             raise AkipsError(message=r.text)
         else:
