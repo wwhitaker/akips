@@ -10,9 +10,8 @@ from akips import AKIPS
 api = AKIPS('akips.example.com',username='api-ro',password='something')
 
 devices = api.get_devices()
-
-for device in devices:
-    print("Device entry: {}".format(device))
+for name, fields in devices.items():
+    print("Device: {} {}".format(name,fields))
 
 ```
 
