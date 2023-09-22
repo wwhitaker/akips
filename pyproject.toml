@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "akips"
-version = "0.1.3"
+version = "0.1.4"
 description = "A python library for interfacing with the AKiPS Web API"
 authors = ["William E Whitaker <will.whitaker@unc.edu>"]
 readme = "README.md"
@@ -17,3 +17,13 @@ pytest = "^7.4"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.semantic_release]
+version_variable = [
+    "src_folder/__init__.py:__version__",
+    "pyproject.toml:version"
+]
+branch = "main"
+upload_to_pypi = false
+upload_to_release = true
+build_command = "pip install poetry && poetry build"

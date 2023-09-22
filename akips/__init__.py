@@ -1,3 +1,5 @@
+__version__ = '0.1.4'
+
 import re
 import logging
 import requests
@@ -48,6 +50,52 @@ class AKIPS:
             logger.debug("Found {} devices in akips".format( len( data.keys() )))
             return data
         return None
+
+    def get_device(self, name):
+        ''' Pull the entire configuration for a single device '''
+        params = {
+            'cmds': 'mget * {} * *'.format(name),
+        }
+
+    def get_device_by_ip(self, ipaddr, use_cache=True):
+        ''' Search for a device by an alternate IP address
+        This makes use of a special site script and not the normal api '''
+        params = {
+            'function': 'web_find_device_by_ip',
+            'ipaddr': ipaddr
+        }
+        section='/api-script/'
+
+    def get_unreachable(self):
+        ''' Pull a list of unreachable IPv4 ping devices '''
+        params = {
+            'cmds': 'mget * * * /PING.icmpState|SNMP.snmpState/ value /down/',
+        }
+
+    def get_group_membership(self):
+        ''' Pull a list of device to group memberships '''
+        params = {
+            'cmds': 'mgroup device *',
+        }
+
+    def get_maintenance_mode(self):
+        ''' Pull a list of devices in maintenance mode '''
+        params = {
+            'cmds': 'mget * * any group maintenance_mode',
+        }
+
+    def set_maintenance_mode(self, device_name, mode='True'):
+        ''' Set maintenance mode on or off for a device '''
+        params = {
+            'function': 'web_manual_grouping',
+            'type': 'device',
+            'group': 'maintenance_mode',
+            'device': device_name
+        }
+
+    def get_status(self, device='*', child='*', attribute='*'):
+        ''' Pull the status values we are most interested in '''
+        pass
 
     def get_events(self, type='all', period='last1h'):
         ''' Pull a list of events.  Command syntax:
