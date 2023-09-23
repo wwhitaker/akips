@@ -1,13 +1,22 @@
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/akip.svg)](https://img.shields.io/pypi/pyversions/akips)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/akips.svg)](https://img.shields.io/pypi/pyversions/akips)
 [![PyPI](https://img.shields.io/pypi/v/akips.svg)](https://pypi.python.org/pypi/akips)
 [![Downloads](https://static.pepy.tech/badge/akips)](https://pepy.tech/project/akips)
 [![GitHub contributors](https://img.shields.io/github/contributors/wwhitaker/akips.svg)](https://GitHub.com/wwhitaker/akips/graphs/contributors/)
 
-# akips
+akips
+=======
 This akips module provides a simple way for python scripts to interact with 
 the [AKiPS Network Monitoring Software](http://akips.com) API interface.
 
-## Example
+## Installation
+
+To install akips, simply us pip:
+
+```
+$ pip install akips
+```
+
+## Usage Example
 
 ```py
 from akips import AKIPS
