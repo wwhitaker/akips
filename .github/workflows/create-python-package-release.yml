@@ -1,0 +1,71 @@
+name: Create python package release
+on:
+  push:
+    branches:
+      - create-python-package-release
+
+jobs:
+  create-python-package-release:
+    name: Create a python package release that can be installed via pip or poetry
+    runs-on: ubuntu-latest
+    environment: prod
+
+    env:
+      PACKAGE_PATH: "./${{ vars.PACKAGE_NAME }}"
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+
+      - name: Install poetry
+        run: curl -sSL https://install.python-poetry.org | python3 -
+
+      - name: Build mycoolpackage
+        working-directory: ${{ env.PACKAGE_PATH }}
+        run: poetry build
+
+      - name: Get package version
+        working-directory: ${{ env.PACKAGE_PATH }}
+        run: echo PACKAGE_VERSION=$(grep version pyproject.toml | cut -d\" -f2) >> $GITHUB_ENV
+
+      - name: Create release
+        uses: actions/create-release@v1
+        id: create_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ env.PACKAGE_VERSION }}
+          release_name: mycoolpackage v${{ env.PACKAGE_VERSION }}
+          draft: false
+          prerelease: false
+
+      - name: Upload wheel
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ env.PACKAGE_PATH }}/dist/mycoolpackage-${{ env.PACKAGE_VERSION }}-py3-none-any.whl
+          asset_name: mycoolpackage-${{ env.PACKAGE_VERSION }}-py3-none-any.whl
+          asset_content_type: application/octet-stream
+
+      - name: Create Issue for a failed deployment
+        if: ${{ failure() }}
+        uses: dacbd/create-issue-action@main
+        with:
+          token: ${{ github.token }}
+          title: Action workflow failed.
+          body: |
+            ### Context
+            [Failed Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            [Codebase](https://github.com/${{ github.repository }}/tree/${{ github.sha }})
+            Workflow name - `${{ github.workflow }}`
+            Job -           `${{ github.job }}`
+            status -        `${{ job.status }}`
+
+      
