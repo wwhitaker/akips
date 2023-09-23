@@ -29,7 +29,7 @@ for name, fields in devices.items():
 
 ```
 
-# Bugs/Requests
+## Bugs/Requests
 
 Please use the [GitHub issue tracker](https://github.com/wwhitaker/akips/issues) 
 to submit bugs or request features.
