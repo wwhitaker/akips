@@ -52,22 +52,22 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ env.PACKAGE_PATH }}/dist/${{ vars.PACKAGE_NAME}}-${{ env.PACKAGE_VERSION }}-py3-none-any.whl
-          asset_name: ${{ vars.PACKAGE_NAME}}-${{ env.PACKAGE_VERSION }}-py3-none-any.whl
+          asset_path: ${{ env.PACKAGE_PATH }}/dist/${{ vars.PACKAGE_NAME }}-${{ env.PACKAGE_VERSION }}-py3-none-any.whl
+          asset_name: ${{ vars.PACKAGE_NAME }}-${{ env.PACKAGE_VERSION }}-py3-none-any.whl
           asset_content_type: application/octet-stream
 
-      - name: Create Issue for a failed deployment
-        if: ${{ failure() }}
-        uses: dacbd/create-issue-action@main
-        with:
-          token: ${{ github.token }}
-          title: Action workflow failed.
-          body: |
-            ### Context
-            [Failed Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            [Codebase](https://github.com/${{ github.repository }}/tree/${{ github.sha }})
-            Workflow name - `${{ github.workflow }}`
-            Job -           `${{ github.job }}`
-            status -        `${{ job.status }}`
+      # - name: Create Issue for a failed deployment
+      #   if: ${{ failure() }}
+      #   uses: dacbd/create-issue-action@main
+      #   with:
+      #     token: ${{ github.token }}
+      #     title: Action workflow failed.
+      #     body: |
+      #       ### Context
+      #       [Failed Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+      #       [Codebase](https://github.com/${{ github.repository }}/tree/${{ github.sha }})
+      #       Workflow name - `${{ github.workflow }}`
+      #       Job -           `${{ github.job }}`
+      #       status -        `${{ job.status }}`
 
       
