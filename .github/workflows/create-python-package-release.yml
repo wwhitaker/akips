@@ -1,8 +1,10 @@
 name: Create python package release
 on:
   push:
-    branches:
-      - create-python-package-release
+    branches: [main]
+  pull_request:
+    types: [opened]
+    branches: [main]
 
 jobs:
   create-python-package-release:
