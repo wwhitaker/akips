@@ -40,15 +40,14 @@ jobs:
     
   Release:
     needs: Quality
-    # https://github.community/t/how-do-i-specify-job-dependency-running-in-another-workflow/16482
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master' && !contains(github.event.head_commit.message, 'chore(release):')
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master' && needs.Quality.result == 'success'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v4
         with:
           python-version: '3.10'
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Semantic Release
         run: |
           pip install python-semantic-release
