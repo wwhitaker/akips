@@ -33,7 +33,7 @@ jobs:
 
       - name: Get package version
         working-directory: ${{ env.PACKAGE_PATH }}
-        run: echo PACKAGE_VERSION=$(grep version pyproject.toml | cut -d\" -f2) >> $GITHUB_ENV
+        run: echo PACKAGE_VERSION=$(grep version ${{ env.PACKAGE_PATH }}/pyproject.toml | cut -d\" -f2) >> $GITHUB_ENV
 
       - name: Create release
         uses: actions/create-release@v1
