@@ -27,7 +27,7 @@ jobs:
       - name: Install poetry
         run: curl -sSL https://install.python-poetry.org | python3 -
 
-      - name: Build mycoolpackage
+      - name: Build package
         working-directory: ${{ env.PACKAGE_PATH }}
         run: poetry build
 
@@ -42,7 +42,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: v${{ env.PACKAGE_VERSION }}
-          release_name: mycoolpackage v${{ env.PACKAGE_VERSION }}
+          release_name: v${{ vars.PACKAGE_NAME }} v${{ env.PACKAGE_VERSION }}
           draft: false
           prerelease: false
 
@@ -52,8 +52,8 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ env.PACKAGE_PATH }}/dist/mycoolpackage-${{ env.PACKAGE_VERSION }}-py3-none-any.whl
-          asset_name: mycoolpackage-${{ env.PACKAGE_VERSION }}-py3-none-any.whl
+          asset_path: ${{ env.PACKAGE_PATH }}/dist/${{ vars.PACKAGE_NAME}}-${{ env.PACKAGE_VERSION }}-py3-none-any.whl
+          asset_name: ${{ vars.PACKAGE_NAME}}-${{ env.PACKAGE_VERSION }}-py3-none-any.whl
           asset_content_type: application/octet-stream
 
       - name: Create Issue for a failed deployment
