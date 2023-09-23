@@ -35,7 +35,7 @@ class AKIPS:
             # Data comes back as 'plain/text' type so we have to parse it
             lines = text.split('\n')
             for line in lines:
-                match = re.match("^(\S+)\s(\S+)\s(\S+)\s=\s(.*)$", line)
+                match = re.match(r'^(\S+)\s(\S+)\s(\S+)\s=\s(.*)$', line)
                 if match:
                     if match.group(1) not in data:
                         # Populate a default entry for all desired fields
@@ -53,45 +53,51 @@ class AKIPS:
 
     def get_device(self, name):
         ''' Pull the entire configuration for a single device '''
-        params = {
-            'cmds': 'mget * {} * *'.format(name),
-        }
+        # params = {
+        #     'cmds': 'mget * {} * *'.format(name),
+        # }
+        pass
 
     def get_device_by_ip(self, ipaddr, use_cache=True):
         ''' Search for a device by an alternate IP address
         This makes use of a special site script and not the normal api '''
-        params = {
-            'function': 'web_find_device_by_ip',
-            'ipaddr': ipaddr
-        }
-        section = '/api-script/'
+        # params = {
+        #     'function': 'web_find_device_by_ip',
+        #     'ipaddr': ipaddr
+        # }
+        # section = '/api-script/'
+        pass
 
     def get_unreachable(self):
         ''' Pull a list of unreachable IPv4 ping devices '''
-        params = {
-            'cmds': 'mget * * * /PING.icmpState|SNMP.snmpState/ value /down/',
-        }
+        # params = {
+        #     'cmds': 'mget * * * /PING.icmpState|SNMP.snmpState/ value /down/',
+        # }
+        pass
 
     def get_group_membership(self):
         ''' Pull a list of device to group memberships '''
-        params = {
-            'cmds': 'mgroup device *',
-        }
+        # params = {
+        #     'cmds': 'mgroup device *',
+        # }
+        pass
 
     def get_maintenance_mode(self):
         ''' Pull a list of devices in maintenance mode '''
-        params = {
-            'cmds': 'mget * * any group maintenance_mode',
-        }
+        # params = {
+        #     'cmds': 'mget * * any group maintenance_mode',
+        # }
+        pass
 
     def set_maintenance_mode(self, device_name, mode='True'):
         ''' Set maintenance mode on or off for a device '''
-        params = {
-            'function': 'web_manual_grouping',
-            'type': 'device',
-            'group': 'maintenance_mode',
-            'device': device_name
-        }
+        # params = {
+        #     'function': 'web_manual_grouping',
+        #     'type': 'device',
+        #     'group': 'maintenance_mode',
+        #     'device': device_name
+        # }
+        pass
 
     def get_status(self, device='*', child='*', attribute='*'):
         ''' Pull the status values we are most interested in '''
@@ -112,16 +118,16 @@ class AKIPS:
             data = []
             lines = text.split('\n')
             for line in lines:
-                match = re.match(r'^(?P<epoch>\S+)\s(?P<parent>\S+)\s(?P<child>\S+)\s(?P<attribute>\S+)\s(?P<type>\S+)\s(?P<flags>\S+)\s(?P<details>.*)$', line)
+                match = re.match(r'^(\S+)\s(\S+)\s(\S+)\s(\S+)\s(\S+)\s(\S+)\s(.*)$', line)
                 if match:
                     entry = {
-                        'epoch': match.group('epoch'),
-                        'parent': match.group('parent'),
-                        'child': match.group('child'),
-                        'attribute': match.group('attribute'),
-                        'type': match.group('type'),
-                        'flags': match.group('flags'),
-                        'details': match.group('details'),
+                        'epoch': match.group(1),
+                        'parent': match.group(2),
+                        'child': match.group(3),
+                        'attribute': match.group(4),
+                        'type': match.group(5),
+                        'flags': match.group(6),
+                        'details': match.group(7),
                     }
                     data.append(entry)
             logger.debug("Found {} events of type {} in akips".format(len(data), type))
