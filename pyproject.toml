@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "akips"
 version = "0.1.4"
-description = "A python library for interfacing with the AKiPS Web API"
+description = "Module to interact with the AKiPS Network Monitoring Software API interface"
 authors = ["William E Whitaker <will.whitaker@unc.edu>"]
 readme = "README.md"
 license = "MIT"
