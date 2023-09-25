@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 from akips import AKIPS, AkipsError
 
+
 class AkipsTest(unittest.TestCase):
 
     @patch('requests.Session.get')
@@ -37,4 +38,3 @@ class AkipsTest(unittest.TestCase):
         self.assertEqual(devices['192.168.1.29']['SNMPv2-MIB.sysDescr'], 'VMware ESXi 6.5.0 build-8294253 VMware Inc. x86_64')
         self.assertEqual(devices['192.168.1.29']['SNMPv2-MIB.sysName'], 'server.example.com')
         self.assertEqual(devices['192.168.1.30']['ip4addr'], '192.168.1.30')
-
