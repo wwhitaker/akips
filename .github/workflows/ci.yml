@@ -48,7 +48,7 @@ jobs:
 
     - name: Test with pytest
       run: |
-        poetry run python -m pytest -v tests
+        poetry run pytest -v tests
     
   # Release:
   #   needs: Quality
