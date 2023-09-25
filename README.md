@@ -16,6 +16,16 @@ To install akips, simply us pip:
 $ pip install akips
 ```
 
+### AKiPS Setup
+
+AKiPS includes a way to extend the server through custom perl scripts.  They publish a list from
+their [Support - Site scripts](https://www.akips.com/customer-support/site-scripts/) page, along
+with install instructions.
+
+This module can use additional routines included in the *akips_setup* directory of 
+this repository, [site_scripting.pl](akips_setup/site_scripting.pl).
+
+
 ## Usage Example
 
 ```py
