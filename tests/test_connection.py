@@ -8,18 +8,18 @@ akips_username = os.getenv('AKIPS_USERNAME', '')
 akips_password = os.getenv('AKIPS_PASSWORD', '')
 
 # Example code
-api = AKIPS(akips_server,username=akips_username,password=akips_password,verify=False)
-devices = api.get_devices()
-for device in devices:
-    print("device: {}".format(device))
+# api = AKIPS(akips_server,username=akips_username,password=akips_password,verify=False)
+# devices = api.get_devices()
+# for device in devices:
+#     print("device: {}".format(device))
 
-def test_placeholder():
-    assert True
+# def test_placeholder():
+#     assert True
 
-def test_auth_failure():
-    r_text = "ERROR: api-db invalid username/password"
+# def test_auth_failure():
+#     r_text = "ERROR: api-db invalid username/password"
 
-    assert True
+#     assert True
 
 # @patch("requests.Session")
 # def test_something(session_mock: MagicMock):
