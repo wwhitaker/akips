@@ -29,7 +29,7 @@ class AKIPS:
         params = {
             'cmds': 'mget text * sys /ip.addr|SNMPv2-MIB.sysName|SNMPv2-MIB.sysDescr|SNMPv2-MIB.sysLocation/',
         }
-        text = self.akips_get(params=params)
+        text = self._get(params=params)
         if text:
             data = {}
             # Data comes back as 'plain/text' type so we have to parse it
@@ -113,7 +113,7 @@ class AKIPS:
         params = {
             'cmds': 'mget event {} time {}'.format(type, period)
         }
-        text = self.akips_get(params=params)
+        text = self._get(params=params)
         if text:
             data = []
             lines = text.split('\n')
@@ -134,7 +134,7 @@ class AKIPS:
             return data
         return None
 
-    def akips_get(self, section='/api-db/', params=None, timeout=30):
+    def _get(self, section='/api-db/', params=None, timeout=30):
         ''' Call HTTP GET against the AKiPS server '''
         server_url = 'https://' + self.server + section
         params['username'] = self.username
@@ -161,5 +161,4 @@ class AKIPS:
             logger.error("Web API request failed: {}".format(r.text))
             raise AkipsError(message=r.text)
         else:
-            # AKiPS signaled a success
             return r.text

@@ -1,44 +1,40 @@
-import os
-import logging
+import unittest
 from unittest.mock import MagicMock, patch
-from akips import AKIPS
-
-akips_server = os.getenv('AKIPS_SERVER', '')
-akips_username = os.getenv('AKIPS_USERNAME', '')
-akips_password = os.getenv('AKIPS_PASSWORD', '')
-
-# Example code
-# api = AKIPS(akips_server,username=akips_username,password=akips_password,verify=False)
-# devices = api.get_devices()
-# for device in devices:
-#     print("device: {}".format(device))
-
-# def test_placeholder():
-#     assert True
-
-# def test_auth_failure():
-#     r_text = "ERROR: api-db invalid username/password"
-
-#     assert True
-
-# @patch("requests.Session")
-# def test_something(session_mock: MagicMock):
-#     r_text = "ERROR: api-db invalid username/password"
-
-#     # Setup mocks
-#     session_mock.get.return_value = response(ok=True, return_code=200, r_text)
-
-#     # Run tests
-#     akips = AKIPS()
-#     response = akips.get_devices()
-    
-#     # assert we got the right things
-#     assert response['foo'] == 'bar'
-
-#     # Assert the right HTTP call got made
-#     sesison_mock.get.assert_called_with("foo", ...)
+from akips import AKIPS, AkipsError
 
 
+class AkipsTest(unittest.TestCase):
 
+    @patch('requests.Session.get')
+    def test_akips_error(self, session_mock: MagicMock):
+        r_text = "ERROR: api-db invalid username/password"
 
+        session_mock.return_value.ok = True
+        session_mock.return_value.status_code = 200
+        session_mock.return_value.text = r_text
+        self.assertIsInstance(session_mock, MagicMock)
 
+        api = AKIPS('127.0.0.1')
+
+        self.assertFalse(session_mock.called)
+        self.assertRaises(AkipsError, api.get_devices)
+        self.assertTrue(session_mock.called)
+
+    @patch('requests.Session.get')
+    def test_get_devices(self, session_mock: MagicMock):
+        r_text = """192.168.1.29 sys ip4addr = 192.168.1.29
+192.168.1.29 sys SNMPv2-MIB.sysDescr = VMware ESXi 6.5.0 build-8294253 VMware Inc. x86_64
+192.168.1.29 sys SNMPv2-MIB.sysName = server.example.com
+192.168.1.30 sys ip4addr = 192.168.1.30
+"""
+
+        session_mock.return_value.ok = True
+        session_mock.return_value.status_code = 200
+        session_mock.return_value.text = r_text
+
+        api = AKIPS('127.0.0.1')
+        devices = api.get_devices()
+        self.assertEqual(devices['192.168.1.29']['ip4addr'], '192.168.1.29')
+        self.assertEqual(devices['192.168.1.29']['SNMPv2-MIB.sysDescr'], 'VMware ESXi 6.5.0 build-8294253 VMware Inc. x86_64')
+        self.assertEqual(devices['192.168.1.29']['SNMPv2-MIB.sysName'], 'server.example.com')
+        self.assertEqual(devices['192.168.1.30']['ip4addr'], '192.168.1.30')
