@@ -1,5 +1,4 @@
 # This workflow will install Python dependencies, run tests and lint with a single version of Python
-# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 
 name: CI
 on:
@@ -11,6 +10,11 @@ on:
 jobs:
   Quality:
     runs-on: ubuntu-latest
+    environment: prod
+
+    env:
+      PACKAGE_PATH: "./${{ vars.PACKAGE_NAME }}"
+
     steps:
     - uses: actions/checkout@v3
     - name: Setup python
@@ -38,15 +42,12 @@ jobs:
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
-        # python -m poetry run flake8 . --exclude .venv --count --select=E9,F63,F7,F82 --show-source --statistics
         poetry run flake8 . --exclude .venv --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        # python -m poetry run flake8 . --exclude .venv --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
         poetry run flake8 . --exclude .venv --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
     - name: Test with pytest
       run: |
-        # python -m poetry run python -m pytest -v tests
         poetry run python -m pytest -v tests
     
   # Release:
@@ -65,3 +66,66 @@ jobs:
   #         git config user.name github-actions
   #         git config user.email github-actions@github.com
   #         semantic-release publish
+
+  # create-python-package-release:
+  #   name: Create a python package release that can be installed via pip or poetry
+  #   runs-on: ubuntu-latest
+  #   environment: prod
+
+  #   env:
+  #     PACKAGE_PATH: "./${{ vars.PACKAGE_NAME }}"
+    
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v3
+
+  #     - name: Install python 3.11
+  #       uses: actions/setup-python@v4
+  #       with:
+  #         python-version: 3.11
+
+  #     - name: Install poetry
+  #       run: curl -sSL https://install.python-poetry.org | python3 -
+
+  #     - name: Build mycoolpackage
+  #       working-directory: ${{ env.PACKAGE_PATH }}
+  #       run: poetry build
+
+  #     - name: Get package version
+  #       working-directory: ${{ env.PACKAGE_PATH }}
+  #       run: echo PACKAGE_VERSION=$(grep version pyproject.toml | cut -d\" -f2) >> $GITHUB_ENV
+
+  #     - name: Create release
+  #       uses: actions/create-release@v1
+  #       id: create_release
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       with:
+  #         tag_name: v${{ env.PACKAGE_VERSION }}
+  #         release_name: mycoolpackage v${{ env.PACKAGE_VERSION }}
+  #         draft: false
+  #         prerelease: false
+
+  #     - name: Upload wheel
+  #       uses: actions/upload-release-asset@v1
+  #       env:
+  #         GITHUB_TOKEN: ${{ github.token }}
+  #       with:
+  #         upload_url: ${{ steps.create_release.outputs.upload_url }}
+  #         asset_path: ${{ env.PACKAGE_PATH }}/dist/mycoolpackage-${{ env.PACKAGE_VERSION }}-py3-none-any.whl
+  #         asset_name: mycoolpackage-${{ env.PACKAGE_VERSION }}-py3-none-any.whl
+  #         asset_content_type: application/octet-stream
+
+  #     - name: Create Issue for a failed deployment
+  #       if: ${{ failure() }}
+  #       uses: dacbd/create-issue-action@main
+  #       with:
+  #         token: ${{ github.token }}
+  #         title: Action workflow failed.
+  #         body: |
+  #           ### Context
+  #           [Failed Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+  #           [Codebase](https://github.com/${{ github.repository }}/tree/${{ github.sha }})
+  #           Workflow name - `${{ github.workflow }}`
+  #           Job -           `${{ github.job }}`
+  #           status -        `${{ job.status }}`
