@@ -191,7 +191,30 @@ class AKIPS:
 
     def get_status(self, device='*', child='*', attribute='*'):
         ''' Pull the status values we are most interested in '''
-        pass
+        params = {
+            'cmds': f'mget * {device} {child} {attribute}' 
+        }
+        text = self._get(params=params)
+        if text:
+            data = []
+            lines = text.split('\n')
+            for line in lines:
+                match = re.match(r'^(\S+)\s(\S+)\s(\S+)\s=\s(\S*),(\S*),(\S*),(\S*),(\S*)$', line)
+                if match:
+                    entry = {
+                        'device': match.group(1),
+                        'child': match.group(2),
+                        'attribute':  match.group(3),
+                        'index': match.group(4),
+                        'state': match.group(5),
+                        'device_added': match.group(6), # epoch in local timezone
+                        'event_start': match.group(7),  # epoch in local timezone
+                        'ipaddr': match.group(8)
+                    }
+                    data.append( entry )
+            logger.debug("Found {} states in akips".format( len( data ) ))
+            return data
+        return None
 
     def get_events(self, event_type='all', period='last1h'):
         ''' Pull a list of events.  Command syntax:
