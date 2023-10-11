@@ -41,10 +41,10 @@ class AkipsTest(unittest.TestCase):
 
     @patch('requests.Session.get')
     def test_get_unreachable(self, session_mock: MagicMock):
-        r_text = """172.29.248.54 ping4 PING.icmpState = 1,down,1484685257,1657029502,172.29.248.54
-172.29.248.54 sys SNMP.snmpState = 1,down,1484685257,1657029499,
-CrN-082-SmithCenter-AP_Stats_Table ping4 PING.icmpState = 1,down,1605595895,1656331597,172.29.94.63
-CrN-082-SmithCenter-AP_Talent_Table ping4 PING.icmpState = 1,down,1641624705,1646101757,172.29.94.112
+        r_text = """192.168.248.54 ping4 PING.icmpState = 1,down,1484685257,1657029502,192.168.248.54
+192.168.248.54 sys SNMP.snmpState = 1,down,1484685257,1657029499,
+CrN-082-AP ping4 PING.icmpState = 1,down,1605595895,1656331597,192.168.94.63
+CrN-082-AP ping4 PING.icmpState = 1,down,1641624705,1646101757,192.168.94.112
 """
         session_mock.return_value.ok = True
         session_mock.return_value.status_code = 200
