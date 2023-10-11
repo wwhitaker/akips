@@ -72,8 +72,8 @@ class AKIPS:
                 if match:
                     name = match.group(1)
                     if match.group(2) not in data:
-                       # initialize the dict of attributes
-                       data[ match.group(2) ] = {}
+                        # initialize the dict of attributes
+                        data[ match.group(2) ] = {}
                     if match.group(5):
                         # Save this attribute value to data
                         data[ match.group(2) ][ match.group(3) ] = match.group(5)
