@@ -29,9 +29,16 @@ class AKIPS:
             requests.packages.urllib3.disable_warnings()    # pylint: disable=no-member
 
     def get_devices(self):
-        ''' Pull a list of key fields for all devices in akips '''
+        ''' Pull a list of key attributes for all devices in akips '''
+        attributes = [
+            'ip4addr',
+            'SNMPv2-MIB.sysName',
+            'SNMPv2-MIB.sysDescr',
+            'SNMPv2-MIB.sysLocation'
+        ]
+        cmd_attributes = "|".join(attributes)
         params = {
-            'cmds': 'mget text * sys /ip.addr|SNMPv2-MIB.sysName|SNMPv2-MIB.sysDescr|SNMPv2-MIB.sysLocation/',
+            'cmds': f'mget text * sys /{cmd_attributes}/',
         }
         text = self._get(params=params)
         if text:
@@ -43,12 +50,7 @@ class AKIPS:
                 if match:
                     if match.group(1) not in data:
                         # Populate a default entry for all desired fields
-                        data[match.group(1)] = {
-                            'ip4addr': '',
-                            'SNMPv2-MIB.sysName': '',
-                            'SNMPv2-MIB.sysDescr': '',
-                            'SNMPv2-MIB.sysLocation': '',
-                        }
+                        data[match.group(1)] = dict.fromkeys(attributes)
                     # Save this attribute value to data
                     data[match.group(1)][match.group(3)] = match.group(4)
             logger.debug("Found {} devices in akips".format(len(data.keys())))
@@ -57,10 +59,32 @@ class AKIPS:
 
     def get_device(self, name):
         ''' Pull the entire configuration for a single device '''
-        # params = {
-        #     'cmds': 'mget * {} * *'.format(name),
-        # }
-        pass
+        params = {
+            'cmds': f'mget * {name} * *'
+        }
+        text = self._get(params=params)
+        if text:
+            data = {}
+            # Data comes back as 'plain/text' type so we have to parse it.  Example:
+            lines = text.split('\n')
+            for line in lines:
+                match = re.match(r'^(\S+)\s(\S+)\s(\S+)\s=(\s(.*))?$', line)
+                if match:
+                    name = match.group(1)
+                    if match.group(2) not in data:
+                       # initialize the dict of attributes
+                       data[ match.group(2) ] = {}
+                    if match.group(5):
+                        # Save this attribute value to data
+                        data[ match.group(2) ][ match.group(3) ] = match.group(5)
+                    else:
+                        # save a blank string if there was nothing after equals
+                        data[ match.group(2) ][ match.group(3) ] = ''
+            if name:
+                data['name'] = name
+            logger.debug("Found device {} in akips".format( data ))
+            return data
+        return None
 
     def get_device_by_ip(self, ipaddr, use_cache=True):
         ''' Search for a device by an alternate IP address
@@ -90,7 +114,7 @@ class AKIPS:
                     event_start = datetime.fromtimestamp(int( match.group(7) ), tz=pytz.timezone(self.server_timezone))
                     if name not in data:
                         # populate a starting point for this device
-                        data[name] = { 
+                        data[name] = {
                             'name': name,
                             'ping_state': 'n/a',
                             'snmp_state': 'n/a',
@@ -130,10 +154,23 @@ class AKIPS:
 
     def get_group_membership(self):
         ''' Pull a list of device to group memberships '''
-        # params = {
-        #     'cmds': 'mgroup device *',
-        # }
-        pass
+        params = {
+            'cmds': 'mgroup device *',
+        }
+        text = self._get(params=params)
+        if text:
+            data = {}
+            # Data comes back as 'plain/text' type so we have to parse it
+            lines = text.split('\n')
+            for line in lines:
+                match = re.match(r'^(\S+)\s=\s(.*)$', line)
+                if match:
+                    if match.group(1) not in data:
+                        # Populate a default entry for all desired fields
+                        data[ match.group(1) ] = match.group(2).split(',')
+            logger.debug("Found {} device and group mappings in akips".format( len( data.keys() )))
+            return data
+        return None
 
     def get_maintenance_mode(self):
         ''' Pull a list of devices in maintenance mode '''
