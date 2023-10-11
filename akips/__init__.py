@@ -28,6 +28,8 @@ class AKIPS:
         if not verify:
             requests.packages.urllib3.disable_warnings()    # pylint: disable=no-member
 
+    ### Entity commands
+
     def get_devices(self):
         ''' Pull a list of key attributes for all devices in akips '''
         attributes = [
@@ -86,15 +88,51 @@ class AKIPS:
             return data
         return None
 
-    def get_device_by_ip(self, ipaddr, use_cache=True):
+    def get_device_by_ip(self, ipaddr):
         ''' Search for a device by an alternate IP address
         This makes use of a special site script and not the normal api '''
-        # params = {
-        #     'function': 'web_find_device_by_ip',
-        #     'ipaddr': ipaddr
-        # }
-        # section = '/api-script/'
-        pass
+        params = {
+            'function': 'web_find_device_by_ip',
+            'ipaddr': ipaddr
+        }
+        text = self._get(section='/api-script/', params=params)
+        if text:
+            lines = text.split('\n')
+            for line in lines:
+                match = re.match(r'IP Address (\S+) is configured on (\S+)', line)
+                if match:
+                    ip_query = match.group(1)
+                    device = match.group(2)
+                    logger.debug("found {} on {}".format( ip_query, device ))
+                    return device
+        return None
+
+    def get_status(self, device='*', child='*', attribute='*'):
+        ''' Pull the status values we are most interested in '''
+        params = {
+            'cmds': f'mget * {device} {child} {attribute}' 
+        }
+        text = self._get(params=params)
+        if text:
+            data = []
+            lines = text.split('\n')
+            for line in lines:
+                match = re.match(r'^(\S+)\s(\S+)\s(\S+)\s=\s(\S*),(\S*),(\S*),(\S*),(\S*)$', line)
+                if match:
+                    entry = {
+                        'device': match.group(1),
+                        'child': match.group(2),
+                        'attribute':  match.group(3),
+                        'index': match.group(4),
+                        'state': match.group(5),
+                        'device_added': match.group(6), # epoch in local timezone
+                        'event_start': match.group(7),  # epoch in local timezone
+                        'ipaddr': match.group(8)
+                    }
+                    data.append( entry )
+            logger.debug("Found {} states in akips".format( len( data ) ))
+            return data
+        return None
 
     def get_unreachable(self):
         ''' Pull a list of unreachable IPv4 ping devices '''
@@ -152,10 +190,12 @@ class AKIPS:
 
         return data
 
-    def get_group_membership(self):
+    ### Group commands
+
+    def get_group_membership(self, device='*'):
         ''' Pull a list of device to group memberships '''
         params = {
-            'cmds': 'mgroup device *',
+            'cmds': f'mgroup device {device}',
         }
         text = self._get(params=params)
         if text:
@@ -174,47 +214,41 @@ class AKIPS:
 
     def get_maintenance_mode(self):
         ''' Pull a list of devices in maintenance mode '''
-        # params = {
-        #     'cmds': 'mget * * any group maintenance_mode',
-        # }
-        pass
-
-    def set_maintenance_mode(self, device_name, mode='True'):
-        ''' Set maintenance mode on or off for a device '''
-        # params = {
-        #     'function': 'web_manual_grouping',
-        #     'type': 'device',
-        #     'group': 'maintenance_mode',
-        #     'device': device_name
-        # }
-        pass
-
-    def get_status(self, device='*', child='*', attribute='*'):
-        ''' Pull the status values we are most interested in '''
         params = {
-            'cmds': f'mget * {device} {child} {attribute}' 
+            'cmds': 'mget * * any group maintenance_mode',
         }
         text = self._get(params=params)
         if text:
             data = []
+            # Data comes back as 'plain/text' type so we have to parse it
             lines = text.split('\n')
             for line in lines:
-                match = re.match(r'^(\S+)\s(\S+)\s(\S+)\s=\s(\S*),(\S*),(\S*),(\S*),(\S*)$', line)
+                match = re.match(r'^(\S+)$', line)
                 if match:
-                    entry = {
-                        'device': match.group(1),
-                        'child': match.group(2),
-                        'attribute':  match.group(3),
-                        'index': match.group(4),
-                        'state': match.group(5),
-                        'device_added': match.group(6), # epoch in local timezone
-                        'event_start': match.group(7),  # epoch in local timezone
-                        'ipaddr': match.group(8)
-                    }
-                    data.append( entry )
-            logger.debug("Found {} states in akips".format( len( data ) ))
+                    data.append( match.group(1) )
+            logger.debug("Found {} devices in maintenance mode".format( len( data )))
             return data
         return None
+
+    def set_maintenance_mode(self, device_name, mode='True'):
+        ''' Set maintenance mode on or off for a device '''
+        params = {
+            'function': 'web_manual_grouping',
+            'type': 'device',
+            'group': 'maintenance_mode',
+            'device': device_name
+        }
+        if mode == 'True':
+            params['mode'] = 'assign'
+        else:
+            params['mode'] = 'clear'
+        text = self._get(section='/api-script',params=params)
+        if text:
+            logger.debug("Maintenance mode update result {}".format( text ))
+            return text
+        return None
+
+    ### Event commands
 
     def get_events(self, event_type='all', period='last1h'):
         ''' Pull a list of events.  Command syntax:
@@ -246,6 +280,44 @@ class AKIPS:
             logger.debug("Found {} events of type {} in akips".format(len(data), type))
             return data
         return None
+
+    ### Time-series commands
+
+    def get_high_latency(self,period='last1h'):
+        ''' List devices with high pint RTT times '''
+        # params={
+        #     'cmds': f'mget {period} avg above 10000 rtt * /ping/ *'
+        # }
+        pass
+
+    ### Availability commands
+
+    def get_availability(self, period='last1h', report='ping4,snmp'):
+        ''' Retrieve device availability statistics '''
+        params = {
+            'cmds': f'nm-availability mode device time {period} report {report}'
+        }
+        text = self._get(params=params)
+        if text:
+            data = []
+            lines = text.split('\n')
+            for line in lines:
+                match = re.match(r'^(\S+),(\S+),(\S+),(\S+),(\S+),(\S+)$', line)
+                if match:
+                    entry = {
+                        'parent': match.group(1),
+                        'child': match.group(2),
+                        'attribute': match.group(3),
+                        'total_time': match.group(4),
+                        'match_time': match.group(5),
+                        'group_target': match.group(6),
+                    }
+                    data.append(entry)
+            logger.debug("Found data")
+            return data
+        return None
+
+    # Base operations
 
     def _get(self, section='/api-db/', params=None, timeout=30):
         ''' Call HTTP GET against the AKiPS server '''
