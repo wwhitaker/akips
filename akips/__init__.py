@@ -73,16 +73,16 @@ class AKIPS:
                     name = match.group(1)
                     if match.group(2) not in data:
                         # initialize the dict of attributes
-                        data[ match.group(2) ] = {}
+                        data[match.group(2)] = {}
                     if match.group(5):
                         # Save this attribute value to data
-                        data[ match.group(2) ][ match.group(3) ] = match.group(5)
+                        data[match.group(2)][match.group(3)] = match.group(5)
                     else:
                         # save a blank string if there was nothing after equals
-                        data[ match.group(2) ][ match.group(3) ] = ''
+                        data[match.group(2)][match.group(3)] = ''
             if name:
                 data['name'] = name
-            logger.debug("Found device {} in akips".format( data ))
+            logger.debug("Found device {} in akips".format(data))
             return data
         return None
 
@@ -111,7 +111,7 @@ class AKIPS:
                     # epoch fields are in the server's timezone
                     name = match.group(1)
                     attribute = match.group(3)
-                    event_start = datetime.fromtimestamp(int( match.group(7) ), tz=pytz.timezone(self.server_timezone))
+                    event_start = datetime.fromtimestamp(int(match.group(7)), tz=pytz.timezone(self.server_timezone))
                     if name not in data:
                         # populate a starting point for this device
                         data[name] = {
@@ -122,21 +122,21 @@ class AKIPS:
                         }
                     if attribute == 'PING.icmpState':
                         data[name]['child'] = match.group(2),
-                        data[name]['ping_state'] =  match.group(5)
+                        data[name]['ping_state'] = match.group(5)
                         data[name]['index'] = match.group(4)
-                        data[name]['device_added'] = datetime.fromtimestamp(int( match.group(6) ), tz=pytz.timezone(self.server_timezone))
-                        data[name]['event_start'] = datetime.fromtimestamp(int( match.group(7) ), tz=pytz.timezone(self.server_timezone))
+                        data[name]['device_added'] = datetime.fromtimestamp(int(match.group(6)), tz=pytz.timezone(self.server_timezone))
+                        data[name]['event_start'] = datetime.fromtimestamp(int(match.group(7)), tz=pytz.timezone(self.server_timezone))
                         data[name]['ip4addr'] = match.group(8)
                     elif attribute == 'SNMP.snmpState':
                         data[name]['child'] = match.group(2),
-                        data[name]['snmp_state'] =  match.group(5)
+                        data[name]['snmp_state'] = match.group(5)
                         data[name]['index'] = match.group(4)
-                        data[name]['device_added'] = datetime.fromtimestamp(int( match.group(6) ), tz=pytz.timezone(self.server_timezone))
-                        data[name]['event_start'] = datetime.fromtimestamp(int( match.group(7) ), tz=pytz.timezone(self.server_timezone))
+                        data[name]['device_added'] = datetime.fromtimestamp(int(match.group(6)), tz=pytz.timezone(self.server_timezone))
+                        data[name]['event_start'] = datetime.fromtimestamp(int(match.group(7)), tz=pytz.timezone(self.server_timezone))
                         data[name]['ip4addr'] = None
                     if event_start < data[name]['event_start']:
                         data[name]['event_start'] = event_start
-            logger.debug("Found {} devices in akips".format( len( data )))
+            logger.debug("Found {} devices in akips".format(len(data)))
             logger.debug("data: {}".format(data))
 
         # for name in data:
@@ -167,8 +167,8 @@ class AKIPS:
                 if match:
                     if match.group(1) not in data:
                         # Populate a default entry for all desired fields
-                        data[ match.group(1) ] = match.group(2).split(',')
-            logger.debug("Found {} device and group mappings in akips".format( len( data.keys() )))
+                        data[match.group(1)] = match.group(2).split(',')
+            logger.debug("Found {} device and group mappings in akips".format(len(data.keys())))
             return data
         return None
 
