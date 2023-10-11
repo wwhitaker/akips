@@ -1,8 +1,11 @@
-__version__ = '0.1.4'
+''' Base module '''
+__version__ = '0.1.5'
 
 import re
 import logging
+from datetime import datetime
 import requests
+import pytz
 
 from akips.exceptions import AkipsError
 
@@ -11,7 +14,8 @@ logger = logging.getLogger(__name__)
 
 
 class AKIPS:
-    # Class to handle interactions with AKiPS API
+    ''' Class to handle interactions with AKiPS API '''
+    server_timezone = 'America/New_York'
 
     def __init__(self, server, username='api-ro', password=None, verify=True):
         ''' Connect to the AKiPS instance '''
@@ -21,8 +25,8 @@ class AKIPS:
         self.verify = verify
         self.session = requests.Session()
 
-        if (not verify):
-            requests.packages.urllib3.disable_warnings()
+        if not verify:
+            requests.packages.urllib3.disable_warnings()    # pylint: disable=no-member
 
     def get_devices(self):
         ''' Pull a list of key fields for all devices in akips '''
@@ -70,10 +74,59 @@ class AKIPS:
 
     def get_unreachable(self):
         ''' Pull a list of unreachable IPv4 ping devices '''
-        # params = {
-        #     'cmds': 'mget * * * /PING.icmpState|SNMP.snmpState/ value /down/',
-        # }
-        pass
+        params = {
+            'cmds': 'mget * * * /PING.icmpState|SNMP.snmpState/ value /down/',
+        }
+        text = self._get(params=params)
+        data = {}
+        if text:
+            lines = text.split('\n')
+            for line in lines:
+                match = re.match(r'^(\S+)\s(\S+)\s(\S+)\s=\s(\S+),(\S+),(\S+),(\S+),(\S+)?$', line)
+                if match:
+                    # epoch fields are in the server's timezone
+                    name = match.group(1)
+                    attribute = match.group(3)
+                    event_start = datetime.fromtimestamp(int( match.group(7) ), tz=pytz.timezone(self.server_timezone))
+                    if name not in data:
+                        # populate a starting point for this device
+                        data[name] = { 
+                            'name': name,
+                            'ping_state': 'n/a',
+                            'snmp_state': 'n/a',
+                            'event_start': event_start  # epoch in local timezone
+                        }
+                    if attribute == 'PING.icmpState':
+                        data[name]['child'] = match.group(2),
+                        data[name]['ping_state'] =  match.group(5)
+                        data[name]['index'] = match.group(4)
+                        data[name]['device_added'] = datetime.fromtimestamp(int( match.group(6) ), tz=pytz.timezone(self.server_timezone))
+                        data[name]['event_start'] = datetime.fromtimestamp(int( match.group(7) ), tz=pytz.timezone(self.server_timezone))
+                        data[name]['ip4addr'] = match.group(8)
+                    elif attribute == 'SNMP.snmpState':
+                        data[name]['child'] = match.group(2),
+                        data[name]['snmp_state'] =  match.group(5)
+                        data[name]['index'] = match.group(4)
+                        data[name]['device_added'] = datetime.fromtimestamp(int( match.group(6) ), tz=pytz.timezone(self.server_timezone))
+                        data[name]['event_start'] = datetime.fromtimestamp(int( match.group(7) ), tz=pytz.timezone(self.server_timezone))
+                        data[name]['ip4addr'] = None
+                    if event_start < data[name]['event_start']:
+                        data[name]['event_start'] = event_start
+            logger.debug("Found {} devices in akips".format( len( data )))
+            logger.debug("data: {}".format(data))
+
+        # for name in data:
+        #     # Fill in the unreported gaps so we have ping4 and snmp up/down data
+        #     if data[name]['ping_state'] == 'n/a':
+        #         ping_status = self.get_status(device=name, child='ping4', attribute='PING.icmpState')
+
+        #     if data[name]['snmp_state'] == 'n/a':
+        #         snmp_status = self.get_status(device=name, child='sys', attribute='SNMP.snmpState')
+
+        # ideal data return based on unreachable device report
+        # Device, Ping4 (state,IPv4), SNMP (state,IP), Last Change (... ago), Location, Description
+
+        return data
 
     def get_group_membership(self):
         ''' Pull a list of device to group memberships '''
@@ -103,7 +156,7 @@ class AKIPS:
         ''' Pull the status values we are most interested in '''
         pass
 
-    def get_events(self, type='all', period='last1h'):
+    def get_events(self, event_type='all', period='last1h'):
         ''' Pull a list of events.  Command syntax:
             mget event {all,critical,enum,threshold,uptime}
             time {time filter} [{parent regex} {child regex}
@@ -111,7 +164,7 @@ class AKIPS:
             [any|all|not group {group name} ...] '''
 
         params = {
-            'cmds': 'mget event {} time {}'.format(type, period)
+            'cmds': f'mget event {event_type} time {period}'
         }
         text = self._get(params=params)
         if text:
