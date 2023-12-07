@@ -1,12 +1,15 @@
+''' Testing '''
 import unittest
 from unittest.mock import MagicMock, patch
 from akips import AKIPS, AkipsError
 
 
 class AkipsTest(unittest.TestCase):
+    ''' Test cases '''
 
     @patch('requests.Session.get')
     def test_akips_error(self, session_mock: MagicMock):
+        ''' test basic akips error string '''
         r_text = "ERROR: api-db invalid username/password"
 
         session_mock.return_value.ok = True
@@ -22,6 +25,7 @@ class AkipsTest(unittest.TestCase):
 
     @patch('requests.Session.get')
     def test_get_devices(self, session_mock: MagicMock):
+        ''' test get devices '''
         r_text = """192.168.1.29 sys ip4addr = 192.168.1.29
 192.168.1.29 sys SNMPv2-MIB.sysDescr = VMware ESXi 6.5.0 build-8294253 VMware Inc. x86_64
 192.168.1.29 sys SNMPv2-MIB.sysName = server.example.com
@@ -41,6 +45,7 @@ class AkipsTest(unittest.TestCase):
 
     @patch('requests.Session.get')
     def test_get_unreachable(self, session_mock: MagicMock):
+        ''' test unreachable device report '''
         r_text = """192.168.248.54 ping4 PING.icmpState = 1,down,1484685257,1657029502,192.168.248.54
 192.168.248.54 sys SNMP.snmpState = 1,down,1484685257,1657029499,
 CrN-082-AP ping4 PING.icmpState = 1,down,1605595895,1656331597,192.168.94.63

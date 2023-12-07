@@ -31,7 +31,7 @@ class AKIPS:
     ### Entity commands
 
     def get_devices(self):
-        ''' Pull a list of key attributes for all devices in akips '''
+        ''' Pull a list of key attributes for all devices '''
         attributes = [
             'ip4addr',
             'SNMPv2-MIB.sysName',
@@ -45,46 +45,48 @@ class AKIPS:
         text = self._get(params=params)
         if text:
             data = {}
-            # Data comes back as 'plain/text' type so we have to parse it
             lines = text.split('\n')
             for line in lines:
                 match = re.match(r'^(\S+)\s(\S+)\s(\S+)\s=\s(.*)$', line)
                 if match:
-                    if match.group(1) not in data:
-                        # Populate a default entry for all desired fields
-                        data[match.group(1)] = dict.fromkeys(attributes)
-                    # Save this attribute value to data
-                    data[match.group(1)][match.group(3)] = match.group(4)
-            logger.debug("Found {} devices in akips".format(len(data.keys())))
+                    device_name = match.group(1)
+                    if device_name not in data:
+                        data[device_name] = dict.fromkeys(attributes)
+                    data[device_name][match.group(3)] = match.group(4)
+                else:
+                    logger.warning(f'Unable to parse output {line}')
+            logger.debug(f'ok: {params["cmds"]}')   # pylint: disable=logging-fstring-interpolation
             return data
         return None
 
-    def get_device(self, name):
+    def get_device(self, device, child='*'):
         ''' Pull the entire configuration for a single device '''
         params = {
-            'cmds': f'mget * {name} * *'
+            'cmds': f'mget * {device} {child} *'
         }
         text = self._get(params=params)
         if text:
             data = {}
-            # Data comes back as 'plain/text' type so we have to parse it.  Example:
+            # Data comes back as 'plain/text' type so we have to parse it.
             lines = text.split('\n')
             for line in lines:
                 match = re.match(r'^(\S+)\s(\S+)\s(\S+)\s=(\s(.*))?$', line)
                 if match:
-                    name = match.group(1)
-                    if match.group(2) not in data:
-                        # initialize the dict of attributes
-                        data[match.group(2)] = {}
-                    if match.group(5):
-                        # Save this attribute value to data
-                        data[match.group(2)][match.group(3)] = match.group(5)
+                    line_parent = match.group(1)
+                    line_child = match.group(2)
+                    line_attribute = match.group(3)
+                    line_value = match.group(5)
+                    if line_child not in data:
+                        data[line_child] = {}
+                    if line_value:
+                        data[line_child][line_attribute] = line_value
                     else:
-                        # save a blank string if there was nothing after equals
-                        data[match.group(2)][match.group(3)] = ''
-            if name:
-                data['name'] = name
-            logger.debug("Found device {} in akips".format(data))
+                        data[line_child][line_attribute] = ''
+                elif line == '':
+                    logger.debug(f'skipping blank line')
+                else:
+                    logger.warning(f'Unable to parse output "{line}"')
+            logger.debug(f'ok: {params["cmds"]}')   # pylint: disable=logging-fstring-interpolation
             return data
         return None
 
@@ -102,22 +104,49 @@ class AKIPS:
                 match = re.match(r'IP Address (\S+) is configured on (\S+)', line)
                 if match:
                     ip_query = match.group(1)
-                    device = match.group(2)
-                    logger.debug("found {} on {}".format( ip_query, device ))
-                    return device
+                    device_name = match.group(2)
+                    logger.debug(f'ok: {ip_query} is on {device_name}')  # pylint: disable=logging-fstring-interpolation
+                    return device_name
+                else:
+                    logger.warning(f'Unable to parse output {line}')
         return None
 
-    def get_status(self, device='*', child='*', attribute='*'):
-        ''' Pull the status values we are most interested in '''
+    def get_device_attribute(self, device, child, attribute):
+        ''' Retrieve a single device configuration attribute '''
         params = {
-            'cmds': f'mget * {device} {child} {attribute}' 
+            'cmds': f'get {device} {child} {attribute}' 
         }
+        text = self._get(params=params)
+        if text:
+            data = None
+            lines = text.split('\n')
+            for line in lines:
+                if line != '':
+                    data = line
+            logger.debug(f'ok: {params["cmds"]}')   # pylint: disable=logging-fstring-interpolation
+            return data
+        return None
+
+    def get_status(self, status_type='ping'):
+        ''' Bulk pull specific status values related to reachability '''
+        if status_type == 'ups':
+            params = { 'cmds': 'mget * * ups UPS-MIB.upsOutputSource' }
+        elif status_type == 'ping':
+            params = { 'cmds': 'mget * * ping4 PING.icmpState' }
+        elif status_type == 'snmp':
+            params = { 'cmds': 'mget * * sys SNMP.snmpState' }
+        elif status_type == 'battery_test':
+            params = { 'cmds': 'mget * * battery LIEBERT-GP-POWER-MIB.lgpPwrBatteryTestResult' }
+        else:
+            logger.error(f'Invalid get status type {status_type}')    # pylint: disable=logging-fstring-interpolation
+            return None
+
         text = self._get(params=params)
         if text:
             data = []
             lines = text.split('\n')
             for line in lines:
-                match = re.match(r'^(\S+)\s(\S+)\s(\S+)\s=\s(\S*),(\S*),(\S*),(\S*),(\S*)$', line)
+                match = re.match("^(\S+)\s(\S+)\s(\S+)\s=\s(\S*),(\S*),(\S*),(\S*),(\S*)$", line)
                 if match:
                     entry = {
                         'device': match.group(1),
@@ -149,7 +178,8 @@ class AKIPS:
                     # epoch fields are in the server's timezone
                     name = match.group(1)
                     attribute = match.group(3)
-                    event_start = datetime.fromtimestamp(int(match.group(7)), tz=pytz.timezone(self.server_timezone))
+                    event_start = datetime.fromtimestamp(int(match.group(7)),
+                                                         tz=pytz.timezone(self.server_timezone))
                     if name not in data:
                         # populate a starting point for this device
                         data[name] = {
@@ -208,7 +238,8 @@ class AKIPS:
                     if match.group(1) not in data:
                         # Populate a default entry for all desired fields
                         data[match.group(1)] = match.group(2).split(',')
-            logger.debug("Found {} device and group mappings in akips".format(len(data.keys())))
+            # logger.debug("Found {} device and group mappings in akips".format(len(data.keys())))
+            logger.debug(f'ok: {params["cmds"]}')   # pylint: disable=logging-fstring-interpolation
             return data
         return None
 
@@ -226,7 +257,8 @@ class AKIPS:
                 match = re.match(r'^(\S+)$', line)
                 if match:
                     data.append( match.group(1) )
-            logger.debug("Found {} devices in maintenance mode".format( len( data )))
+            # logger.debug("Found {} devices in maintenance mode".format( len( data )))
+            logger.debug(f'ok: {params["cmds"]}')   # pylint: disable=logging-fstring-interpolation
             return data
         return None
 
@@ -244,7 +276,7 @@ class AKIPS:
             params['mode'] = 'clear'
         text = self._get(section='/api-script',params=params)
         if text:
-            logger.debug("Maintenance mode update result {}".format( text ))
+            logger.debug("Maintenance mode update result {}".format( text ))    # pylint: disable=logging-fstring-interpolation
             return text
         return None
 
@@ -318,6 +350,25 @@ class AKIPS:
         return None
 
     # Base operations
+
+    def _parse_enum(self, values):
+        ''' Attributes with a type of enum return five values separated by commas. '''
+        match = re.match("^(\S*),(\S*),(\S*),(\S*),(\S*)$", values)
+        if match:
+            entry = {
+                'number': match.group(1),       # list number (from MIB)
+                'value': match.group(2),        # text value (from MIB)
+                # 'created': match.group(3),      # time created (epoch timestamp)
+                # 'modified': match.group(4),     # time modified (epoch timestamp)
+                'description': match.group(5)   # child description
+            }
+            entry['created'] = datetime.fromtimestamp(int(match.group(3)), 
+                                                        tz=pytz.timezone(self.server_timezone))
+            entry['modified'] = datetime.fromtimestamp(int(match.group(4)), 
+                                                        tz=pytz.timezone(self.server_timezone))
+            return entry
+        else:
+            raise AkipsError(message=f'Not a ENUM type value: {values}')
 
     def _get(self, section='/api-db/', params=None, timeout=30):
         ''' Call HTTP GET against the AKiPS server '''
